@@ -1,0 +1,31 @@
+#
+#First thing we need to do is install ubuntu cause we need an OS
+#
+#
+FROM ubuntu:16.04
+RUN cd
+WORKDIR /home/
+COPY en_microsoft_r_server_910_for_linux_x64_10323878.tar.gz en_microsoft_r_server_910_for_linux_x64_10323878.tar.gz
+RUN tar zxvf en_microsoft_r_server_910_for_linux_x64_10323878.tar.gz
+RUN apt-get autoclean
+
+RUN apt-get update \
+	&& apt-get install -y --no-install-recommends \
+		ca-certificates \
+		curl \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /home/MRS91Linux/
+RUN  ./install.sh -a -u
+
+WORKDIR /home/
+
+COPY shapi.tar.gz shapi.tar.gz
+COPY shconfig2.tar.gz shconfig2.tar.gz
+COPY shtrain.tar.gz shtrain.tar.gz
+
+RUN Rscript -e 'install.packages("/home/shtrain.tar.gz", repos = NULL, type = "source") '
+RUN Rscript -e 'install.packages("/home/shconfig2.tar.gz", repos = NULL, type = "source") '
+RUN Rscript -e 'install.packages("/home/shapi.tar.gz", repos = NULL, type = "source") '
+
+ENTRYPOINT [ "R" ]
