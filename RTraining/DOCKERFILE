@@ -5,10 +5,8 @@
 FROM ubuntu:16.04
 RUN cd
 WORKDIR /home/
-COPY en_microsoft_r_server_910_for_linux_x64_10323878.tar.gz en_microsoft_r_server_910_for_linux_x64_10323878.tar.gz
-RUN tar zxvf en_microsoft_r_server_910_for_linux_x64_10323878.tar.gz
+#Lets run any apt-gets through here, that way it's standardized
 RUN apt-get autoclean
-
 RUN apt-get update \
 	&& apt-get install -y --no-install-recommends \
 		ca-certificates \
@@ -18,37 +16,45 @@ RUN apt-get update \
 		g++ \
 		# Needed for odbc:
 		unixodbc-dev \
+		# Needed for data.table:
+		--reinstall make \
+		gcc  \
+		# Needed for data.table:
+		libssl-dev \
+		# Needed for odbc to connect to our servers:
+		locales && locale-gen --purge en_US.UTF-8 \
     && rm -rf /var/lib/apt/lists/*
 
-
+#This is used to install the standardized version of the Microsoft R server that our DS have 
+COPY en_microsoft_r_server_910_for_linux_x64_10323878.tar.gz en_microsoft_r_server_910_for_linux_x64_10323878.tar.gz
+RUN tar zxvf en_microsoft_r_server_910_for_linux_x64_10323878.tar.gz
 WORKDIR /home/MRS91Linux/
 RUN  ./install.sh -a -u
 
+# These will copy all of our internal packages so we can install them once the other dependencies are good.
 WORKDIR /home/
-
 COPY shapi.tar.gz shapi.tar.gz
 COPY shconfig2.tar.gz shconfig2.tar.gz
 COPY shtrain.tar.gz shtrain.tar.gz
-
 RUN Rscript -e 'install.packages("/home/shtrain.tar.gz", repos = NULL, type = "source") '
 RUN Rscript -e 'install.packages("/home/shconfig2.tar.gz", repos = NULL, type = "source") '
 RUN Rscript -e 'install.packages("/home/shapi.tar.gz", repos = NULL, type = "source") '
 
 #Needed to install data.table package
-RUN apt-get install --reinstall make
-RUN apt-get install gcc -y
+# RUN apt-get install --reinstall make
+# RUN apt-get install gcc -y
 RUN Rscript -e 'install.packages("data.table")'
 
 #Needed for httr
-RUN apt-get install libssl-dev -y
+# RUN apt-get install libssl-dev -y
 RUN Rscript -e 'install.packages("httr")'
-
-RUN Rscript -e 'install.packages("rlang")'
-
+# RUN Rscript -e 'install.packages("rlang")'
 RUN Rscript -e 'install.packages("Rcpp")'
-
+# this is used to fix some gcc errors we were seeing
 RUN echo CXX1X=gcc -std=c++0x -fPIC >> /usr/lib64/microsoft-r/3.3/lib64/R/etc/Makeconf
 RUN echo CXX1XSTD=-std=c++0x >> /usr/lib64/microsoft-r/3.3/lib64/R/etc/Makeconf
+
+
 RUN Rscript -e 'install.packages("odbc")'
 RUN Rscript -e 'install.packages("stringr")'
 RUN Rscript -e 'install.packages("RODBC")'
@@ -64,6 +70,7 @@ RUN Rscript -e 'install.packages("/home/purrr.tar.gz", repos = NULL, type = "sou
 RUN curl -L https://cran.r-project.org/src/contrib/Archive/snakecase/snakecase_0.5.1.tar.gz > snakecase.tar.gz
 RUN Rscript -e 'install.packages("/home/snakecase.tar.gz", repos = NULL, type = "source")'
 
+#Needed for odbc and Driver install
 COPY unixODBC-2.3.0.tar.gz unixODBC-2.3.0.tar.gz
 RUN tar zxvf unixODBC-2.3.0.tar.gz
 WORKDIR /home/unixODBC-2.3.0/
@@ -73,22 +80,19 @@ RUN ./configure --prefix=/usr --libdir=/usr/lib64 --sysconfdir=/etc --enable-gui
 RUN make
 RUN make install
 
-
 WORKDIR /home/
-# COPY msodbcsql-11.0.2260.0.tar.gz msodbcsql-11.0.2260.0.tar.gz
-# RUN tar zxvf msodbcsql-11.0.2260.0.tar.gz
 
 COPY msodbcsql-11.tar.gz msodbcsql-11.tar.gz
 RUN tar zxvf msodbcsql-11.tar.gz
 
-# RUN apt-get install wget -y
+#This is what actually installs the Microsofts SQL 11 Driver
 WORKDIR /home/msodbcsql-11.0.2260.0/
 RUN ./install.sh install --accept-license
 RUN ln -s /lib/x86_64-linux-gnu/libssl.so.1.0.0 /lib/x86_64-linux-gnu/libssl.so.0.9.8
 RUN ln -s /lib/x86_64-linux-gnu/libcrypto.so.1.0.0 /lib/x86_64-linux-gnu/libcrypto.so.0.9.8
 
-RUN apt-get install -y locales 
-RUN locale-gen --purge en_US.UTF-8
+# RUN apt-get install -y locales 
+# RUN locale-gen --purge en_US.UTF-8
 # RUN Rscript -e 'install.packages("jsonlite")'
 # RUN Rscript -e 'library("shtrain")'
 
