@@ -13,7 +13,13 @@ RUN apt-get update \
 	&& apt-get install -y --no-install-recommends \
 		ca-certificates \
 		curl \
+		# Needed for Rcpp:
+		make \
+		g++ \
+		# Needed for odbc:
+		unixodbc-dev \
     && rm -rf /var/lib/apt/lists/*
+
 
 WORKDIR /home/MRS91Linux/
 RUN  ./install.sh -a -u
@@ -27,5 +33,63 @@ COPY shtrain.tar.gz shtrain.tar.gz
 RUN Rscript -e 'install.packages("/home/shtrain.tar.gz", repos = NULL, type = "source") '
 RUN Rscript -e 'install.packages("/home/shconfig2.tar.gz", repos = NULL, type = "source") '
 RUN Rscript -e 'install.packages("/home/shapi.tar.gz", repos = NULL, type = "source") '
+
+#Needed to install data.table package
+RUN apt-get install --reinstall make
+RUN apt-get install gcc -y
+RUN Rscript -e 'install.packages("data.table")'
+
+#Needed for httr
+RUN apt-get install libssl-dev -y
+RUN Rscript -e 'install.packages("httr")'
+
+RUN Rscript -e 'install.packages("rlang")'
+
+RUN Rscript -e 'install.packages("Rcpp")'
+
+RUN echo CXX1X=gcc -std=c++0x -fPIC >> /usr/lib64/microsoft-r/3.3/lib64/R/etc/Makeconf
+RUN echo CXX1XSTD=-std=c++0x >> /usr/lib64/microsoft-r/3.3/lib64/R/etc/Makeconf
+RUN Rscript -e 'install.packages("odbc")'
+RUN Rscript -e 'install.packages("stringr")'
+RUN Rscript -e 'install.packages("RODBC")'
+RUN Rscript -e 'install.packages("dplyr")'
+
+RUN curl -L https://cran.r-project.org/src/contrib/Archive/glue/glue_1.2.0.tar.gz > glue.tar.gz
+RUN Rscript -e 'install.packages("/home/glue.tar.gz", repos = NULL, type = "source")'
+RUN Rscript -e 'install.packages("pryr")'
+RUN curl -L https://cran.r-project.org/src/contrib/Archive/rlang/rlang_0.2.2.tar.gz > rlang.tar.gz
+RUN Rscript -e 'install.packages("/home/rlang.tar.gz", repos = NULL, type = "source")'
+RUN curl -L https://cran.r-project.org/src/contrib/Archive/purrr/purrr_0.2.3.tar.gz > purrr.tar.gz
+RUN Rscript -e 'install.packages("/home/purrr.tar.gz", repos = NULL, type = "source")'
+RUN curl -L https://cran.r-project.org/src/contrib/Archive/snakecase/snakecase_0.5.1.tar.gz > snakecase.tar.gz
+RUN Rscript -e 'install.packages("/home/snakecase.tar.gz", repos = NULL, type = "source")'
+
+COPY unixODBC-2.3.0.tar.gz unixODBC-2.3.0.tar.gz
+RUN tar zxvf unixODBC-2.3.0.tar.gz
+WORKDIR /home/unixODBC-2.3.0/
+RUN CPPFLAGS="-DSIZEOF_LONG_INT=8"
+RUN export CPPFLAGS
+RUN ./configure --prefix=/usr --libdir=/usr/lib64 --sysconfdir=/etc --enable-gui=no --enable-drivers=no --enable-iconv --with-iconv-char-enc=UTF8 --with-iconv-ucode-enc=UTF16LE
+RUN make
+RUN make install
+
+
+WORKDIR /home/
+# COPY msodbcsql-11.0.2260.0.tar.gz msodbcsql-11.0.2260.0.tar.gz
+# RUN tar zxvf msodbcsql-11.0.2260.0.tar.gz
+
+COPY msodbcsql-11.tar.gz msodbcsql-11.tar.gz
+RUN tar zxvf msodbcsql-11.tar.gz
+
+# RUN apt-get install wget -y
+WORKDIR /home/msodbcsql-11.0.2260.0/
+RUN ./install.sh install --accept-license
+RUN ln -s /lib/x86_64-linux-gnu/libssl.so.1.0.0 /lib/x86_64-linux-gnu/libssl.so.0.9.8
+RUN ln -s /lib/x86_64-linux-gnu/libcrypto.so.1.0.0 /lib/x86_64-linux-gnu/libcrypto.so.0.9.8
+
+RUN apt-get install -y locales 
+RUN locale-gen --purge en_US.UTF-8
+# RUN Rscript -e 'install.packages("jsonlite")'
+# RUN Rscript -e 'library("shtrain")'
 
 ENTRYPOINT [ "R" ]
