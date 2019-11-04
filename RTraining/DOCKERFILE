@@ -31,15 +31,42 @@ RUN tar zxvf en_microsoft_r_server_910_for_linux_x64_10323878.tar.gz
 WORKDIR /home/MRS91Linux/
 RUN  ./install.sh -a -u
 
+
+#Needed for odbc and Driver install
+WORKDIR /home/
+COPY unixODBC-2.3.0.tar.gz unixODBC-2.3.0.tar.gz
+RUN tar zxvf unixODBC-2.3.0.tar.gz
+WORKDIR /home/unixODBC-2.3.0/
+RUN CPPFLAGS="-DSIZEOF_LONG_INT=8"
+RUN export CPPFLAGS
+RUN ./configure --prefix=/usr --libdir=/usr/lib64 --sysconfdir=/etc --enable-gui=no --enable-drivers=no --enable-iconv --with-iconv-char-enc=UTF8 --with-iconv-ucode-enc=UTF16LE
+RUN make
+RUN make install
+
+WORKDIR /home/
+
+COPY msodbcsql-11.tar.gz msodbcsql-11.tar.gz
+RUN tar zxvf msodbcsql-11.tar.gz
+
+#This is what actually installs the Microsofts SQL 11 Driver
+WORKDIR /home/msodbcsql-11.0.2260.0/
+RUN ./install.sh install --accept-license
+RUN ln -s /lib/x86_64-linux-gnu/libssl.so.1.0.0 /lib/x86_64-linux-gnu/libssl.so.0.9.8
+RUN ln -s /lib/x86_64-linux-gnu/libcrypto.so.1.0.0 /lib/x86_64-linux-gnu/libcrypto.so.0.9.8
+
+
 # These will copy all of our internal packages so we can install them once the other dependencies are good.
 WORKDIR /home/
-COPY shapi.tar.gz shapi.tar.gz
-COPY shconfig2.tar.gz shconfig2.tar.gz
-COPY shtrain.tar.gz shtrain.tar.gz
-RUN Rscript -e 'install.packages("/home/shtrain.tar.gz", repos = NULL, type = "source") '
-RUN Rscript -e 'install.packages("/home/shconfig2.tar.gz", repos = NULL, type = "source") '
-RUN Rscript -e 'install.packages("/home/shapi.tar.gz", repos = NULL, type = "source") '
+# COPY shapi.tar.gz shapi.tar.gz
+# COPY shconfig2.tar.gz shconfig2.tar.gz
+# COPY shtrain.tar.gz shtrain.tar.gz
+# RUN Rscript -e 'install.packages("/home/shtrain.tar.gz", repos = NULL, type = "source") '
+# RUN Rscript -e 'install.packages("/home/shconfig2.tar.gz", repos = NULL, type = "source") '
+# RUN Rscript -e 'install.packages("/home/shapi.tar.gz", repos = NULL, type = "source") '
 
+
+# This will overwrite the default snapshot to match the one the DS are using
+COPY Rprofile.site /usr/lib64/microsoft-r/3.3/lib64/R/etc/Rprofile.site
 #Needed to install data.table package
 # RUN apt-get install --reinstall make
 # RUN apt-get install gcc -y
@@ -69,31 +96,39 @@ RUN curl -L https://cran.r-project.org/src/contrib/Archive/purrr/purrr_0.2.3.tar
 RUN Rscript -e 'install.packages("/home/purrr.tar.gz", repos = NULL, type = "source")'
 RUN curl -L https://cran.r-project.org/src/contrib/Archive/snakecase/snakecase_0.5.1.tar.gz > snakecase.tar.gz
 RUN Rscript -e 'install.packages("/home/snakecase.tar.gz", repos = NULL, type = "source")'
+RUN  Rscript -e 'install.packages("lubridate")'
 
-#Needed for odbc and Driver install
-COPY unixODBC-2.3.0.tar.gz unixODBC-2.3.0.tar.gz
-RUN tar zxvf unixODBC-2.3.0.tar.gz
-WORKDIR /home/unixODBC-2.3.0/
-RUN CPPFLAGS="-DSIZEOF_LONG_INT=8"
-RUN export CPPFLAGS
-RUN ./configure --prefix=/usr --libdir=/usr/lib64 --sysconfdir=/etc --enable-gui=no --enable-drivers=no --enable-iconv --with-iconv-char-enc=UTF8 --with-iconv-ucode-enc=UTF16LE
-RUN make
-RUN make install
-
+# These will copy all of our internal packages so we can install them once the other dependencies are good.
 WORKDIR /home/
+COPY shapi.tar.gz shapi.tar.gz
+COPY shconfig2.tar.gz shconfig2.tar.gz
+# COPY shtrain.tar.gz shtrain.tar.gz
+# RUN Rscript -e 'install.packages("/home/shtrain.tar.gz", repos = NULL, type = "source") '
+COPY shtrain_0.3.11.tar.gz shtrain_0.3.11.tar.gz
 
-COPY msodbcsql-11.tar.gz msodbcsql-11.tar.gz
-RUN tar zxvf msodbcsql-11.tar.gz
 
-#This is what actually installs the Microsofts SQL 11 Driver
-WORKDIR /home/msodbcsql-11.0.2260.0/
-RUN ./install.sh install --accept-license
-RUN ln -s /lib/x86_64-linux-gnu/libssl.so.1.0.0 /lib/x86_64-linux-gnu/libssl.so.0.9.8
-RUN ln -s /lib/x86_64-linux-gnu/libcrypto.so.1.0.0 /lib/x86_64-linux-gnu/libcrypto.so.0.9.8
+RUN Rscript -e 'install.packages("/home/shconfig2.tar.gz", repos = NULL, type = "source") '
+RUN Rscript -e 'install.packages("/home/shapi.tar.gz", repos = NULL, type = "source") '
+RUN Rscript -e 'install.packages("/home/shtrain_0.3.11.tar.gz", repos = NULL, type = "source") '
 
 # RUN apt-get install -y locales 
 # RUN locale-gen --purge en_US.UTF-8
 # RUN Rscript -e 'install.packages("jsonlite")'
 # RUN Rscript -e 'library("shtrain")'
 
-ENTRYPOINT [ "R" ]
+
+COPY 2019-11-04_hibid_report.csv /home/file/DataScience/PreImportScripts/hibid_record_removal/hibid_record_reports/2019-11-04_hibid_report.csv
+COPY ["1082 - Scrapers - Pull","/home/file/DataScience/1082 - Scrapers - Pull/"]
+
+COPY Rprofile.site /usr/lib64/microsoft-r/3.3/lib64/R/etc/Rprofile.site
+
+# CMD [ "Rscript", \
+# 	"/home/file/DataScience/1082 - Scrapers - Pull/master.R", \
+# 	 "server=AGLIWEBDW.sandhills.int; uid=RDevelopmentUser; pwd=kn2G0|6Fh86LH^kevOQf; MultiSubnetFailover=Yes;", \
+# 	 "/home/file/DataScience/1082 - Scrapers - Pull/", \
+# 	 "http://devApiDS.dsdev.ext/EquipmentEvaluation/65DBDC14AE03CCF6730C364D72CC8456/api/EquipmentEvaluationModelImport", \
+# 	 "dev", \
+# 	 "/usr/lib64/microsoft-r/3.3/lib64/R/library",\
+# 	 "import" \
+# 	  ]
+# ENTRYPOINT [ "R" ]
