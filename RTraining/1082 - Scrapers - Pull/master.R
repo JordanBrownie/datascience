@@ -1,7 +1,7 @@
 options(contrasts = rep("contr.treatment", 2))
 
 # suppressWarnings({
-  
+  # library("methods")
   library("shconfig2")
   set_wd()
   load_packages("2017-10-15")
@@ -84,45 +84,46 @@ options(contrasts = rep("contr.treatment", 2))
     trained()
   
 
-#   ### hold out data used for testing
-# #  set.seed(2231)
-# #  filtered_data <- filtered_data[,random_num := ceiling(runif(.N, 0, 10)), by = data_type]
-# #  holdout <- copy(filtered_data)[random_num == 7]
-# #  saveRDS(holdout, file = "holdout.RDS")
-# #  holdout <- readRDS("holdout.RDS")
-# #  filtered_data <- filtered_data[!(ref_id %in% holdout$ref_id)]
+  ### hold out data used for testing
+#  set.seed(2231)
+#  filtered_data <- filtered_data[,random_num := ceiling(runif(.N, 0, 10)), by = data_type]
+#  holdout <- copy(filtered_data)[random_num == 7]
+#  saveRDS(holdout, file = "holdout.RDS")
+#  holdout <- readRDS("holdout.RDS")
+#  filtered_data <- filtered_data[!(ref_id %in% holdout$ref_id)]
   
-#   feature_data <- recipe(filtered_data, info = NULL) %>%
-#     add_continuous_group(cutoffs = continuous_cutoffs) %>% 
-#     add_wmqy() %>% 
-#     filter(!is.na(region)) %>%
-#     trained()
+  feature_data <- recipe(filtered_data, info = NULL) %>%
+    add_continuous_group(cutoffs = continuous_cutoffs) %>% 
+    add_wmqy() %>% 
+    filter(!is.na(region)) %>%
+    trained()
   
-#   source("auction_asking_ratios.R")
+  # save.image("master.RData")
+  source("auction_asking_ratios.R")
   
-#   training_data <- recipe(ratio_data, info = NULL) %>% 
-#     step_roll_join(x = dt_year_mm_final, on = c("make_model", "age"), roll = 'nearest', rollends = c(FALSE,TRUE)) %>%
-#     step_dt(auction(), `:=`(usd_full_price_adjusted = usd_full_price/ratio_auction)) %>%
-#     step_dt(aftersale(), `:=`(usd_full_price_adjusted = usd_full_price)) %>%
-#     step_dt(asking(), `:=`(usd_full_price_adjusted = usd_full_price/ratio_asking)) %>%
-#     add_count(by = list(make_model)) %>% 
-#     filter(make_model_count >= 5) %>% 
-#     trained()
+  training_data <- recipe(ratio_data, info = NULL) %>% 
+    step_roll_join(x = dt_year_mm_final, on = c("make_model", "age"), roll = 'nearest', rollends = c(FALSE,TRUE)) %>%
+    step_dt(auction(), `:=`(usd_full_price_adjusted = usd_full_price/ratio_auction)) %>%
+    step_dt(aftersale(), `:=`(usd_full_price_adjusted = usd_full_price)) %>%
+    step_dt(asking(), `:=`(usd_full_price_adjusted = usd_full_price/ratio_asking)) %>%
+    add_count(by = list(make_model)) %>% 
+    filter(make_model_count >= 5) %>% 
+    trained()
 
-#   final_formula <- paste0("usd_full_price_adjusted~",
-#                           "+manufacturer+mmv_aftersale+region")
+  final_formula <- paste0("usd_full_price_adjusted~",
+                          "+manufacturer+mmv_aftersale+region")
   
-#   final_formula_200 <- paste0("usd_full_price_adjusted~make_model+region")
+  final_formula_200 <- paste0("usd_full_price_adjusted~make_model+region")
   
-#   models <- training_data %>%
-#     purrr::map(.x = c(final_formula, final_formula_200), .f = glm, data = .)
+  models <- training_data %>%
+    purrr::map(.x = c(final_formula, final_formula_200), .f = glm, data = .)
   
-#   bad_factor_levels <- check_slope_coefficients(training_data, models[[1]], ratio_bounds = c(-0.15, 0), 
-#                                                 n_bounds = c(3, 50))
+  bad_factor_levels <- check_slope_coefficients(training_data, models[[1]], ratio_bounds = c(-0.15, 0), 
+                                                n_bounds = c(3, 50))
 
-#   final_training_data <- export_data(data = training_data)
+  final_training_data <- export_data(data = training_data)
   
-#   source("export.R")
+  source("export.R")
   
 # })
 

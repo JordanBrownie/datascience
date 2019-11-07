@@ -12,11 +12,10 @@ aftersale_price_bounds <- c(2000, 275000)
 asking_price_bounds <- c(2500, 300000)
 
 tree_formula <- paste0("usd_full_price~data_type+make_model+manufacturer+age")
-
-rx_pred_price <- train_rx_fast_trees(data = ratio_data[age %between% c(0, 25)], 
+rx_pred_price <- train_rx_fast_trees(data = ratio_data[age %between% c(0, 1)], 
                                      formula = tree_formula, 
-                                     rx_options = list(numTrees = 300, numLeaves = 50))
-
+                                     rx_options = list(numTrees = 300, numLeaves = 50,reportProgress = 3))
+print("post pred price")
 ##### Remove some outliers #####
 ratio_data <- recipe(ratio_data) %>%
   add_prediction(model = rx_pred_price, new_col = "pred_price") %>%
@@ -27,7 +26,7 @@ ratio_data <- recipe(ratio_data) %>%
 
 
 ##### Build make model values with a spec you can impute by make model #####
-rx_mm_value <- train_rx_fast_trees(data = ratio_data[age %between% c(0, 25)], 
+rx_mm_value <- train_rx_fast_trees(data = ratio_data[age %between% c(0, 1)], 
                                    formula = tree_formula, 
                                    rx_options = list(numTrees = 300, numLeaves = 50))
 

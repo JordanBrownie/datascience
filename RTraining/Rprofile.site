@@ -20,11 +20,15 @@ local(
         if (.Platform$OS.type == "unix") {
                 options(download.file.method = "curl")
         }
-        r["CRAN"] <- "https://mran.microsoft.com/snapshot/2017-10-15"
+        r["CRAN"] <- RevoUtils::getRevoRepos()
         options(repos=r)
 
     MRS.is.client <- RevoUtils:::isMicrosoftRClient()
     # set default packages
+    library("methods")
+    library("RevoScaleR")
+    library("MicrosoftML")
+    library("mrsdeploy")
         # For MicrosoftML, check to see if this is a supported platform (Windows, RHEL/Cent 7, Ubuntu 14.04/16.04)
         isMMLSupported <- FALSE
         if (identical(.Platform$OS.type,"windows")) {

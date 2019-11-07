@@ -11,6 +11,12 @@ RUN apt-get update \
 	&& apt-get install -y --no-install-recommends \
 		ca-certificates \
 		curl \
+		# MRO dependencies that don't sort themselves out on their own:
+		less \
+		libgomp1 \
+		libpango-1.0-0 \
+		libxt6 \
+		libsm6 \
 		# Needed for Rcpp:
 		make \
 		g++ \
@@ -66,37 +72,48 @@ WORKDIR /home/
 
 
 # This will overwrite the default snapshot to match the one the DS are using
-COPY Rprofile.site /usr/lib64/microsoft-r/3.3/lib64/R/etc/Rprofile.site
+# COPY Rprofile.site /usr/lib64/microsoft-r/3.3/lib64/R/etc/Rprofile.site
 #Needed to install data.table package
 # RUN apt-get install --reinstall make
 # RUN apt-get install gcc -y
-RUN Rscript -e 'install.packages("data.table")'
+RUN Rscript -e 'install.packages("data.table", repos="https://mran.microsoft.com/snapshot/2017-10-15")'
 
 #Needed for httr
 # RUN apt-get install libssl-dev -y
-RUN Rscript -e 'install.packages("httr")'
+RUN Rscript -e 'install.packages("httr", repos="https://mran.microsoft.com/snapshot/2017-10-15")'
 # RUN Rscript -e 'install.packages("rlang")'
-RUN Rscript -e 'install.packages("Rcpp")'
+RUN Rscript -e 'install.packages("Rcpp", repos="https://mran.microsoft.com/snapshot/2017-10-15")'
 # this is used to fix some gcc errors we were seeing
-RUN echo CXX1X=gcc -std=c++0x -fPIC >> /usr/lib64/microsoft-r/3.3/lib64/R/etc/Makeconf
-RUN echo CXX1XSTD=-std=c++0x >> /usr/lib64/microsoft-r/3.3/lib64/R/etc/Makeconf
+# RUN echo CXX1X=gcc -std=c++0x -fPIC >> /usr/lib64/microsoft-r/3.3/lib64/R/etc/Makeconf
+# RUN echo CXX1XSTD=-std=c++0x >> /usr/lib64/microsoft-r/3.3/lib64/R/etc/Makeconf
+COPY Makeconf /usr/lib64/microsoft-r/3.3/lib64/R/etc/Makeconf
+# newer version
+RUN Rscript -e 'install.packages("odbc", repos="https://mran.microsoft.com/snapshot/2018-06-01")'
+# RUN Rscript -e 'install.packages("odbc", repos="https://mran.microsoft.com/snapshot/2017-10-15")'
+RUN Rscript -e 'install.packages("stringr", repos="https://mran.microsoft.com/snapshot/2017-10-15")'
+RUN Rscript -e 'install.packages("RODBC", repos="https://mran.microsoft.com/snapshot/2017-10-15")'
+RUN Rscript -e 'install.packages("dplyr", repos="https://mran.microsoft.com/snapshot/2017-10-15")'
 
 
-RUN Rscript -e 'install.packages("odbc")'
-RUN Rscript -e 'install.packages("stringr")'
-RUN Rscript -e 'install.packages("RODBC")'
-RUN Rscript -e 'install.packages("dplyr")'
+# RUN curl -L https://cran.r-project.org/src/contrib/Archive/glue/glue_1.2.0.tar.gz > glue.tar.gz
+# RUN Rscript -e 'install.packages("/home/glue.tar.gz", repos = NULL, type = "source")'
+RUN Rscript -e 'install.packages("glue", repos="https://mran.microsoft.com/snapshot/2017-12-15")'
 
-RUN curl -L https://cran.r-project.org/src/contrib/Archive/glue/glue_1.2.0.tar.gz > glue.tar.gz
-RUN Rscript -e 'install.packages("/home/glue.tar.gz", repos = NULL, type = "source")'
-RUN Rscript -e 'install.packages("pryr")'
+
+RUN Rscript -e 'install.packages("pryr", repos="https://mran.microsoft.com/snapshot/2017-10-15")'
 RUN curl -L https://cran.r-project.org/src/contrib/Archive/rlang/rlang_0.2.2.tar.gz > rlang.tar.gz
 RUN Rscript -e 'install.packages("/home/rlang.tar.gz", repos = NULL, type = "source")'
 RUN curl -L https://cran.r-project.org/src/contrib/Archive/purrr/purrr_0.2.3.tar.gz > purrr.tar.gz
 RUN Rscript -e 'install.packages("/home/purrr.tar.gz", repos = NULL, type = "source")'
 RUN curl -L https://cran.r-project.org/src/contrib/Archive/snakecase/snakecase_0.5.1.tar.gz > snakecase.tar.gz
 RUN Rscript -e 'install.packages("/home/snakecase.tar.gz", repos = NULL, type = "source")'
-RUN  Rscript -e 'install.packages("lubridate")'
+RUN  Rscript -e 'install.packages("lubridate", repos="https://mran.microsoft.com/snapshot/2017-10-15")'
+
+
+# Lets install the right version of stuff
+RUN Rscript -e 'install.packages("DBI", repos="https://mran.microsoft.com/snapshot/2018-06-15")'
+RUN Rscript -e 'install.packages("hms", repos="https://mran.microsoft.com/snapshot/2018-06-15")'
+
 
 # These will copy all of our internal packages so we can install them once the other dependencies are good.
 WORKDIR /home/
