@@ -46,7 +46,7 @@ RUN apt-get update \
 # Use major and minor vars to re-use them in non-interactive installation script
 ENV MRO_VERSION_MAJOR 3
 ENV MRO_VERSION_MINOR 5
-ENV MRO_VERSION_BUGFIX 2
+ENV MRO_VERSION_BUGFIX 3
 ENV MRO_VERSION $MRO_VERSION_MAJOR.$MRO_VERSION_MINOR.$MRO_VERSION_BUGFIX
 ENV R_HOME=/opt/microsoft/ropen/$MRO_VERSION/lib64/R
 
@@ -65,72 +65,29 @@ RUN rm microsoft-r-open-*.tar.gz \
 	&& rm -r microsoft-r-open
 
 # Print EULAs on every start of R to the user, because they were accepted at image build time
-# COPY MKL_EULA.txt MKL_EULA.txt
-# COPY MRO_EULA.txt MRO_EULA.txt
-# RUN echo 'cat("\n", readLines("/home/docker/MKL_EULA.txt"), "\n", sep="\n")' >> /opt/microsoft/ropen/$MRO_VERSION/lib64/R/etc/Rprofile.site && \
-# 	echo 'cat("\n", readLines("/home/docker/MRO_EULA.txt"), "\n", sep="\n")' >> /opt/microsoft/ropen/$MRO_VERSION/lib64/R/etc/Rprofile.site
+COPY MKL_EULA.txt MKL_EULA.txt
+COPY MRO_EULA.txt MRO_EULA.txt
+RUN echo 'cat("\n", readLines("/home/docker/MKL_EULA.txt"), "\n", sep="\n")' >> /opt/microsoft/ropen/$MRO_VERSION/lib64/R/etc/Rprofile.site && \
+	echo 'cat("\n", readLines("/home/docker/MRO_EULA.txt"), "\n", sep="\n")' >> /opt/microsoft/ropen/$MRO_VERSION/lib64/R/etc/Rprofile.site
 
 # Add Rcpp because it is widely used
 RUN Rscript -e 'install.packages("Rcpp")'
-# Add data.table and stringr as these are needed by the DS 
-RUN Rscript -e 'install.packages("data.table")'
-RUN Rscript -e 'install.packages("stringr")'
-RUN Rscript -e 'install.packages("jsonlite")'
-
-RUN Rscript -e 'install.packages("plumber")'
-# RUN Rscript -e 'install.packages("RODBC")'
-# RUN Rscript -e 'install.packages("odbc")'
-# RUN Rscript -e 'install.packages("dplyr")'
-# RUN Rscript -e 'install.packages("glue")'
-
 
 # Use libcurl for download, otherwise problems with tar files
 RUN echo 'options("download.file.method" = "libcurl")' >> /opt/microsoft/ropen/$MRO_VERSION/lib64/R/etc/Rprofile.site
 
 # Add demo script
-# COPY demo.R demo.R
-#Move shtrain package to common location
-WORKDIR /usr/local/lib/R/library/
-# COPY shtrain_0.3.8.tar.gz shtrain_0.3.8.tar.gz
-#Lets try and copy my local packages for now
-# WORKDIR /opt/microsoft/ropen/3.5.2/lib64/R/library
-# COPY ./3.5 ./
-
-
-# RUN Rscript -e "install.packages('/usr/local/lib/R/library/shtrain_0.3.8.tar.gz',repos=NULL,type='source')"
-
-# Need to install the shconfig2 stuff
-# COPY shconfig2_0.1.2.tar.gz shconfig2_0.1.2.tar.gz
-# RUN Rscript -e "install.packages('/usr/local/lib/R/library/shconfig2_0.1.2.tar.gz',repos=NULL,type='source')"
-
-
-#Move the model and recipe so that we can evaluate stuff
-WORKDIR /home/
-# COPY 1082_sql_object.RDS 1082_sql_object.RDS
-COPY 1082_serialized_model.Rds 1082_serialized_model.RDS
-
-COPY recipe.r recipe.r
-
-#this is so we can set up a running local API like a boss and get it to work with I/0
-COPY Main.R Main.R
-COPY make_model.R make_model.R
-COPY rest_controller.R rest_controller.R
-EXPOSE 80
-ENTRYPOINT ["Rscript", "Main.R"]
-# RUN Rscript -e "library(shconfig2)"
-# RUN Rscript -e "library(shtrain)"
+COPY demo.R demo.R
 
 # Add image metadata
 LABEL org.label-schema.license="https://mran.microsoft.com/faq/#licensing" \
-    org.label-schema.vendor="Microsoft Corporation, Dockerfile provided by Jordan Brown" \
+    org.label-schema.vendor="Microsoft Corporation, Dockerfile provided by Daniel Nüst" \
 	org.label-schema.name="Microsoft R Open" \
 	org.label-schema.description="Docker images of Microsoft R Open (MRO) with the Intel® Math Kernel Libraries (MKL)." \ 
 	org.label-schema.vcs-url=$VCS_URL \
 	org.label-schema.vcs-ref=$VCS_REF \
 	org.label-schema.build-date=$BUILD_DATE \
 	org.label-schema.schema-version="rc1" \
-	maintainer="Jordan Brown"
+	maintainer="Daniel Nüst <daniel.nuest@uni-muenster.de>"
 
-
-# RUN Rscript recipe.r
 # CMD ["/usr/bin/R", "--no-save"]

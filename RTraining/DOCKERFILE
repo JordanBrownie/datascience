@@ -31,6 +31,7 @@ RUN apt-get update \
 		locales && locale-gen --purge en_US.UTF-8 \
     && rm -rf /var/lib/apt/lists/*
 
+
 #This is used to install the standardized version of the Microsoft R server that our DS have 
 COPY en_microsoft_r_server_910_for_linux_x64_10323878.tar.gz en_microsoft_r_server_910_for_linux_x64_10323878.tar.gz
 RUN tar zxvf en_microsoft_r_server_910_for_linux_x64_10323878.tar.gz
@@ -101,12 +102,12 @@ RUN Rscript -e 'install.packages("glue", repos="https://mran.microsoft.com/snaps
 
 
 RUN Rscript -e 'install.packages("pryr", repos="https://mran.microsoft.com/snapshot/2017-10-15")'
-RUN curl -L https://cran.r-project.org/src/contrib/Archive/rlang/rlang_0.2.2.tar.gz > rlang.tar.gz
-RUN Rscript -e 'install.packages("/home/rlang.tar.gz", repos = NULL, type = "source")'
-RUN curl -L https://cran.r-project.org/src/contrib/Archive/purrr/purrr_0.2.3.tar.gz > purrr.tar.gz
-RUN Rscript -e 'install.packages("/home/purrr.tar.gz", repos = NULL, type = "source")'
-RUN curl -L https://cran.r-project.org/src/contrib/Archive/snakecase/snakecase_0.5.1.tar.gz > snakecase.tar.gz
-RUN Rscript -e 'install.packages("/home/snakecase.tar.gz", repos = NULL, type = "source")'
+# RUN curl -L https://cran.r-project.org/src/contrib/Archive/rlang/rlang_0.2.2.tar.gz > rlang.tar.gz
+RUN Rscript -e 'install.packages("rlang", repos = "https://mran.microsoft.com/snapshot/2018-09-16")'
+# RUN curl -L https://cran.r-project.org/src/contrib/Archive/purrr/purrr_0.2.3.tar.gz > purrr.tar.gz
+RUN Rscript -e 'install.packages("purrr", repos = "https://mran.microsoft.com/snapshot/2017-09-02")'
+# RUN curl -L https://cran.r-project.org/src/contrib/Archive/snakecase/snakecase_0.5.1.tar.gz > snakecase.tar.gz
+RUN Rscript -e 'install.packages("snakecase", repos = "https://mran.microsoft.com/snapshot/2017-10-20")'
 RUN  Rscript -e 'install.packages("lubridate", repos="https://mran.microsoft.com/snapshot/2017-10-15")'
 
 
